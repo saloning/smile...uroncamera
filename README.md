@@ -1,12 +1,16 @@
-# little moments — Photobooth
+# Little Moments — Photobooth
 
-## Run in VS Code
-1. Open this folder in Visual Studio Code.
-2. Install the **Live Server** extension if you don't already have it.
-3. Right-click `index.html` and choose **Open with Live Server**.
-4. Click **Enable camera** and allow webcam permission.
-5. Take photos, select a layout and file format, then **Download** or **Print**.
+Open `index.html` with VS Code Live Server or publish the four files at the root of a GitHub Pages repository. Camera access requires HTTPS or localhost.
 
-Camera access requires a secure context (localhost or HTTPS). Opening the file directly with `file://` may not work. PDF downloads require an internet connection for the jsPDF library loaded from CDN.
+## Features
+- Live camera with front/back switching
+- Five selectable filters, applied to captured JPEGs
+- Auto timer switch: when on, click **Start auto session** once to capture four photos, with a three-second countdown for each
+- Manual capture when auto timer is off
+- Photo strip, individual image, or collage exported as JPEG or PDF; print dialog
+- Photos remain in the browser and are not uploaded
 
-Photos are kept locally in browser memory, not sent to a server. Reloading clears them. A photo strip includes up to the first four current photos; take four for a full strip. Printing opens your browser's print dialog; choose a physical printer or Save as PDF.
+PDF export uses jsPDF from a CDN, so internet access is required for PDF downloads.
+
+
+Face effects: Hearts, Blush, Glasses, Crown, and Sparkles follow the first detected face using MediaPipe Face Mesh. An internet connection is required to load the face-tracking library. Face effects are baked into downloaded photos; no face images are sent to your own server. Tracking is processed in the browser.
