@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id);let stream=null,facing='user',photos=[];const video=$('video');let currentFilter='normal',busy=false,autoCancelled=false;let faceEffect='none',faceLandmarks=null,faceMesh=null,tracking=false,trackingBusy=false;const overlay=$('faceOverlay');let trackingErrorShown=false;
-const filters={normal:'none',bw:'grayscale(1) contrast(1.1)',vintage:'sepia(.7) saturate(.8) contrast(.95)',warm:'sepia(.25) saturate(1.35) brightness(1.06)',cool:'saturate(.85) hue-rotate(18deg) contrast(1.06)'};
+const filters={normal:'none',bw:'grayscale(1) contrast(1.1)',vintage:'sepia(.7) saturate(.8) contrast(.95)',warm:'sepia(.25) saturate(1.35) brightness(1.06)',cool:'sepia(.22) saturate(1.35) hue-rotate(170deg) contrast(1.08)'};
 function applyColorFilter(){
   const effect=filters[currentFilter]||'none';
   // Apply to the actual video, not the face-overlay canvas.
@@ -47,7 +47,7 @@ video.style.setProperty('transform',mirrored?'scaleX(-1)':'none','important');
 overlay.style.setProperty('transform',mirrored?'scaleX(-1)':'none','important');
 await video.play();
 applyColorFilter();
-setupTracking();drawLiveFace();$('placeholder').style.display='none';$('capture').disabled=false;status('Camera ready! Strike a pose.');$('capture').textContent=$('autoMode').checked?'◎ Start auto session':'◎ Take photo'}catch(e){status('Camera unavailable: '+e.message+'. Use localhost or HTTPS and allow camera access.')}}$('start').onclick=startCamera;$('flip').onclick=()=>{facing=facing==='user'?'environment':'user';startCamera()};const wait=ms=>new Promise(r=>setTimeout(r,ms));
+setupTracking();drawLiveFace();$('placeholder').style.display='none';$('capture').disabled=false;status('Camera ready! Strike a pose.');$('capture').textContent=$('autoMode').checked?'◎ Start auto session':'◎ Take photo'}catch(e){status('Camera unavailable: '+e.message+'. Use localhost or HTTPS and allow camera access.')}}$('start').onclick=startCamera;function flipCamera(){if(busy)return;facing=facing==='user'?'environment':'user';startCamera()}$('flip').onclick=flipCamera;$('flipBeside').onclick=flipCamera;const wait=ms=>new Promise(r=>setTimeout(r,ms));
 // CanvasRenderingContext2D.filter is unreliable on some mobile browsers.
 // Pixel processing makes downloaded photos match the chosen preview filter.
 function applyPhotoColorFilter(ctx,width,height,kind){
@@ -74,13 +74,14 @@ function applyPhotoColorFilter(ctx,width,height,kind){
       g=(avg+(g-avg)*1.35)*1.06;
       b=(avg+(b-avg)*1.35)*1.06;
     }else if(kind==='cool'){
-      const avg=(r+g+b)/3;
-      r=(avg+(r-avg)*.85)*.97;
-      g=(avg+(g-avg)*.85)*1.01;
-      b=(avg+(b-avg)*.85)*1.09;
-      r=(r-128)*1.06+128;
-      g=(g-128)*1.06+128;
-      b=(b-128)*1.06+128;
+      // Distinct cool-blue tint applied to pixels, not ctx.filter (unreliable on iOS).
+      const lum=.2126*r+.7152*g+.0722*b;
+      r=(r*.76+lum*.24)*.88-5;
+      g=(g*.82+lum*.18)*1.025+3;
+      b=(b*.78+lum*.22)*1.18+13;
+      r=(r-128)*1.08+128;
+      g=(g-128)*1.08+128;
+      b=(b-128)*1.08+128;
     }
     d[i]=clamp(r);d[i+1]=clamp(g);d[i+2]=clamp(b);
   }
@@ -98,7 +99,33 @@ await wait(160);
 shutter.classList.remove('blink-active');
 $('countdown').textContent='';return true}
 $('capture').onclick=async()=>{if(busy||!stream||!video.videoWidth)return;busy=true;autoCancelled=false;$('capture').disabled=true;const auto=$('autoMode').checked;try{if(auto){status('Auto session running — 4 photos with a 3-second timer.');for(let i=0;i<4;i++){if(autoCancelled||!stream)break;const ok=await snap();if(!ok)break}status(autoCancelled?'Auto session stopped.':'All done! Your four photos are ready.')}else{await snap();status('Photo taken! Strike another pose.')}}finally{busy=false;$('countdown').textContent='';$('capture').disabled=!stream;$('capture').textContent=$('autoMode').checked?'◎ Start auto session':'◎ Take photo'}};
-function render(){const root=$('shots');root.innerHTML='';if(!photos.length)root.innerHTML='<div class="empty">Your photos will show up here after you take them. ✨</div>';photos.forEach((p,i)=>{const card=document.createElement('div');card.className='shot';const img=document.createElement('img');img.src=p;img.alt='Selfie '+(i+1);const bottom=document.createElement('div');bottom.className='shot-bottom';const label=document.createElement('span');label.textContent='SNAP '+String(i+1).padStart(2,'0');const del=document.createElement('button');del.textContent='Remove ×';del.onclick=()=>{photos.splice(i,1);render()};bottom.append(label,del);card.append(img,bottom);root.append(card)});$('counter').textContent=photos.length+' taken';$('selectedPhoto').innerHTML=photos.map((_,i)=>`<option value="${i}">Photo ${i+1}</option>`).join('');$('download').disabled=$('print').disabled=!photos.length}function updateLayout(){$('singleLabel').style.display=$('layout').value==='single'?'flex':'none'}$('layout').onchange=updateLayout;updateLayout();$('clear').onclick=()=>{autoCancelled=true;photos=[];render()};async function compose(){if(!photos.length)throw Error('Take a photo first.');const layout=$('layout').value;const chosen=layout==='single'?[photos[Number($('selectedPhoto').value)||0]]:layout==='strip'?photos.slice(0,4):photos;const canvas=$('output'),ctx=canvas.getContext('2d');const margin=45,gap=20,w=900,h=675;let cols,rows;if(layout==='strip'){cols=1;rows=4;canvas.width=w+margin*2;canvas.height=rows*h+(rows-1)*gap+margin*2+125}else if(layout==='grid'){cols=2;rows=Math.ceil(chosen.length/2);canvas.width=cols*w+(cols-1)*gap+margin*2;canvas.height=rows*h+(rows-1)*gap+margin*2+90}else{cols=1;rows=1;canvas.width=w+margin*2;canvas.height=h+margin*2+90}ctx.fillStyle='#fffaf4';ctx.fillRect(0,0,canvas.width,canvas.height);for(let i=0;i<chosen.length;i++){const img=new Image();img.src=chosen[i];await img.decode();const x=margin+(i%cols)*(w+gap),y=margin+Math.floor(i/cols)*(h+gap);ctx.drawImage(img,x,y,w,h)}ctx.fillStyle='#493a3b';ctx.textAlign='center';ctx.font='bold 32px sans-serif';ctx.fillText('little moments  ♡',canvas.width/2,canvas.height-35);return canvas}function fileName(){return 'little-moments-'+$('layout').value}async function makePDF(canvas){if(!window.jspdf)throw Error('PDF library did not load. Check your internet connection.');const {jsPDF}=window.jspdf;const orientation=canvas.width>canvas.height?'landscape':'portrait';const pdf=new jsPDF({orientation,unit:'px',format:[canvas.width,canvas.height],hotfixes:['px_scaling']});pdf.addImage(canvas.toDataURL('image/jpeg',.95),'JPEG',0,0,canvas.width,canvas.height);return pdf}async function exportFile(print=false){try{const canvas=await compose(),jpeg=canvas.toDataURL('image/jpeg',.95),format=$('format').value;if(print){const url=URL.createObjectURL(await(await fetch(jpeg)).blob());const win=window.open('','_blank');if(!win){URL.revokeObjectURL(url);throw Error('Please allow pop-ups to print.')}win.document.write('<!doctype html><title>Print photos</title><style>body{margin:0;text-align:center}img{max-width:100%;max-height:100vh;object-fit:contain}@media print{@page{margin:0}body{margin:0}}</style><img src="'+url+'" onload="setTimeout(()=>window.print(),350)">');win.document.close();return}if(format==='pdf'){(await makePDF(canvas)).save(fileName()+'.pdf')}else{const a=document.createElement('a');a.href=jpeg;a.download=fileName()+'.jpg';a.click()}}catch(e){status(e.message)}}$('download').onclick=()=>exportFile(false);$('print').onclick=()=>exportFile(true);render();window.addEventListener('resize',drawLiveFace);
+function render(){const root=$('shots');root.innerHTML='';if(!photos.length)root.innerHTML='<div class="empty">Your photos will show up here after you take them. ✨</div>';photos.forEach((p,i)=>{const card=document.createElement('div');card.className='shot';const img=document.createElement('img');img.src=p;img.alt='Selfie '+(i+1);const bottom=document.createElement('div');bottom.className='shot-bottom';const label=document.createElement('span');label.textContent='SNAP '+String(i+1).padStart(2,'0');const del=document.createElement('button');del.textContent='Remove ×';del.onclick=()=>{photos.splice(i,1);render()};bottom.append(label,del);card.append(img,bottom);root.append(card)});$('counter').textContent=photos.length+' taken';$('selectedPhoto').innerHTML=photos.map((_,i)=>`<option value="${i}">Photo ${i+1}</option>`).join('');$('download').disabled=$('print').disabled=$('saveDevice').disabled=!photos.length}function updateLayout(){$('singleLabel').style.display=$('layout').value==='single'?'flex':'none'}$('layout').onchange=updateLayout;updateLayout();$('clear').onclick=()=>{autoCancelled=true;photos=[];render()};async function compose(){if(!photos.length)throw Error('Take a photo first.');const layout=$('layout').value;const chosen=layout==='single'?[photos[Number($('selectedPhoto').value)||0]]:layout==='strip'?photos.slice(0,4):photos;const canvas=$('output'),ctx=canvas.getContext('2d');const margin=45,gap=20,w=900,h=675;let cols,rows;if(layout==='strip'){cols=1;rows=4;canvas.width=w+margin*2;canvas.height=rows*h+(rows-1)*gap+margin*2+125}else if(layout==='grid'){cols=2;rows=Math.ceil(chosen.length/2);canvas.width=cols*w+(cols-1)*gap+margin*2;canvas.height=rows*h+(rows-1)*gap+margin*2+90}else{cols=1;rows=1;canvas.width=w+margin*2;canvas.height=h+margin*2+90}ctx.fillStyle='#fffaf4';ctx.fillRect(0,0,canvas.width,canvas.height);for(let i=0;i<chosen.length;i++){const img=new Image();img.src=chosen[i];await img.decode();const x=margin+(i%cols)*(w+gap),y=margin+Math.floor(i/cols)*(h+gap);ctx.drawImage(img,x,y,w,h)}ctx.fillStyle='#493a3b';ctx.textAlign='center';ctx.font='bold 32px sans-serif';ctx.fillText('little moments  ♡',canvas.width/2,canvas.height-35);return canvas}function fileName(){return 'little-moments-'+$('layout').value}async function makePDF(canvas){if(!window.jspdf)throw Error('PDF library did not load. Check your internet connection.');const {jsPDF}=window.jspdf;const orientation=canvas.width>canvas.height?'landscape':'portrait';const pdf=new jsPDF({orientation,unit:'px',format:[canvas.width,canvas.height],hotfixes:['px_scaling']});pdf.addImage(canvas.toDataURL('image/jpeg',.95),'JPEG',0,0,canvas.width,canvas.height);return pdf}async function exportFile(print=false){try{const canvas=await compose(),jpeg=canvas.toDataURL('image/jpeg',.95),format=$('format').value;if(print){const url=URL.createObjectURL(await(await fetch(jpeg)).blob());const win=window.open('','_blank');if(!win){URL.revokeObjectURL(url);throw Error('Please allow pop-ups to print.')}win.document.write('<!doctype html><title>Print photos</title><style>body{margin:0;text-align:center}img{max-width:100%;max-height:100vh;object-fit:contain}@media print{@page{margin:0}body{margin:0}}</style><img src="'+url+'" onload="setTimeout(()=>window.print(),350)">');win.document.close();return}if(format==='pdf'){(await makePDF(canvas)).save(fileName()+'.pdf')}else{const a=document.createElement('a');a.href=jpeg;a.download=fileName()+'.jpg';a.click()}}catch(e){status(e.message)}}$('download').onclick=()=>exportFile(false);$('print').onclick=()=>exportFile(true);
+// Mobile Share Sheet: on supported phones users can select Save Image / Save to Files.
+// Otherwise download normally (the browser decides where to store the file).
+$('saveDevice').onclick=async()=>{
+  if(!photos.length)return;
+  try{
+    const canvas=await compose(),format=$('format').value;
+    let blob,name,mime;
+    if(format==='pdf'){
+      const pdf=await makePDF(canvas);
+      blob=pdf.output('blob');name=fileName()+'.pdf';mime='application/pdf';
+    }else{
+      blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.95));
+      if(!blob)throw Error('Could not prepare photo.');
+      name=fileName()+'.jpg';mime='image/jpeg';
+    }
+    const file=new File([blob],name,{type:mime});
+    if(navigator.share && navigator.canShare?.({files:[file]})){
+      try{await navigator.share({files:[file]});status('Choose Save Image or Save to Files in the share menu.');return}
+      catch(e){if(e.name==='AbortError')return;console.warn('Sharing unavailable:',e)}
+    }
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    status('File prepared. Check your device downloads or browser save menu.');
+  }catch(e){status('Could not save photo: '+e.message)}
+};render();window.addEventListener('resize',drawLiveFace);
 window.addEventListener('orientationchange',()=>setTimeout(drawLiveFace,300));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)drawLiveFace()});
 window.addEventListener('pagehide',()=>{tracking=false;if(stream)stream.getTracks().forEach(t=>t.stop())});

@@ -54,3 +54,12 @@
 }
 /* JS sets front/rear orientation and filter directly on video; no CSS
    transform override here, so the rear camera is never mirrored. */
+
+/* Compact flip control beside the shutter */
+.shutter-actions{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:nowrap}
+.camera-bottom .flip-beside{display:inline-flex;align-items:center;justify-content:center;min-width:42px;width:42px;height:42px;padding:0;border:1.5px solid #754858;border-radius:50%;background:#fff8f4;color:#754858;cursor:pointer;flex:0 0 auto}
+.flip-beside:hover{background:#f7dce5}
+.flip-beside:focus-visible{outline:3px solid #754858;outline-offset:3px}
+.export .actions{display:flex;gap:9px;flex-wrap:wrap}
+.export .actions button{min-height:44px}
+@media(max-width:600px){.camera-bottom .shutter-actions{flex:1 1 auto}.camera-bottom .shutter-actions #capture{flex:1 1 auto}.export .actions button{flex:1 1 130px}}

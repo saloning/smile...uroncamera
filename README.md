@@ -24,3 +24,8 @@ Mobile notes:
 - Photos are processed locally in the browser; no photos are uploaded by this app.
 
 Color filters: applied to the live video using CSS filters (including -webkit-filter), and to saved JPEGs with pixel processing for iOS canvas compatibility. Front selfie camera preview and photo are mirrored; back camera preview and photo are not mirrored.
+
+Latest updates:
+- A compact flip-camera button sits next to Take photo. Rear camera is not mirrored.
+- Cool color effect is processed directly into captured pixels for mobile JPEG/PDF output.
+- Save to device uses the native mobile share sheet when file sharing is supported, or downloads the selected JPEG/PDF otherwise. On iPhone choose Save Image or Save to Files from the share sheet; browsers cannot silently write into Photos.
