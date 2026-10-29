@@ -99,32 +99,74 @@ await wait(160);
 shutter.classList.remove('blink-active');
 $('countdown').textContent='';return true}
 $('capture').onclick=async()=>{if(busy||!stream||!video.videoWidth)return;busy=true;autoCancelled=false;$('capture').disabled=true;const auto=$('autoMode').checked;try{if(auto){status('Auto session running — 4 photos with a 3-second timer.');for(let i=0;i<4;i++){if(autoCancelled||!stream)break;const ok=await snap();if(!ok)break}status(autoCancelled?'Auto session stopped.':'All done! Your four photos are ready.')}else{await snap();status('Photo taken! Strike another pose.')}}finally{busy=false;$('countdown').textContent='';$('capture').disabled=!stream;$('capture').textContent=$('autoMode').checked?'◎ Start auto session':'◎ Take photo'}};
-function render(){const root=$('shots');root.innerHTML='';if(!photos.length)root.innerHTML='<div class="empty">Your photos will show up here after you take them. ✨</div>';photos.forEach((p,i)=>{const card=document.createElement('div');card.className='shot';const img=document.createElement('img');img.src=p;img.alt='Selfie '+(i+1);const bottom=document.createElement('div');bottom.className='shot-bottom';const label=document.createElement('span');label.textContent='SNAP '+String(i+1).padStart(2,'0');const del=document.createElement('button');del.textContent='Remove ×';del.onclick=()=>{photos.splice(i,1);render()};bottom.append(label,del);card.append(img,bottom);root.append(card)});$('counter').textContent=photos.length+' taken';$('selectedPhoto').innerHTML=photos.map((_,i)=>`<option value="${i}">Photo ${i+1}</option>`).join('');$('download').disabled=$('print').disabled=$('saveDevice').disabled=!photos.length}function updateLayout(){$('singleLabel').style.display=$('layout').value==='single'?'flex':'none'}$('layout').onchange=updateLayout;updateLayout();$('clear').onclick=()=>{autoCancelled=true;photos=[];render()};async function compose(){if(!photos.length)throw Error('Take a photo first.');const layout=$('layout').value;const chosen=layout==='single'?[photos[Number($('selectedPhoto').value)||0]]:layout==='strip'?photos.slice(0,4):photos;const canvas=$('output'),ctx=canvas.getContext('2d');const margin=45,gap=20,w=900,h=675;let cols,rows;if(layout==='strip'){cols=1;rows=4;canvas.width=w+margin*2;canvas.height=rows*h+(rows-1)*gap+margin*2+125}else if(layout==='grid'){cols=2;rows=Math.ceil(chosen.length/2);canvas.width=cols*w+(cols-1)*gap+margin*2;canvas.height=rows*h+(rows-1)*gap+margin*2+90}else{cols=1;rows=1;canvas.width=w+margin*2;canvas.height=h+margin*2+90}ctx.fillStyle='#fffaf4';ctx.fillRect(0,0,canvas.width,canvas.height);for(let i=0;i<chosen.length;i++){const img=new Image();img.src=chosen[i];await img.decode();const x=margin+(i%cols)*(w+gap),y=margin+Math.floor(i/cols)*(h+gap);ctx.drawImage(img,x,y,w,h)}ctx.fillStyle='#493a3b';ctx.textAlign='center';ctx.font='bold 32px sans-serif';ctx.fillText('little moments  ♡',canvas.width/2,canvas.height-35);return canvas}function fileName(){return 'little-moments-'+$('layout').value}async function makePDF(canvas){if(!window.jspdf)throw Error('PDF library did not load. Check your internet connection.');const {jsPDF}=window.jspdf;const orientation=canvas.width>canvas.height?'landscape':'portrait';const pdf=new jsPDF({orientation,unit:'px',format:[canvas.width,canvas.height],hotfixes:['px_scaling']});pdf.addImage(canvas.toDataURL('image/jpeg',.95),'JPEG',0,0,canvas.width,canvas.height);return pdf}async function exportFile(print=false){try{const canvas=await compose(),jpeg=canvas.toDataURL('image/jpeg',.95),format=$('format').value;if(print){const url=URL.createObjectURL(await(await fetch(jpeg)).blob());const win=window.open('','_blank');if(!win){URL.revokeObjectURL(url);throw Error('Please allow pop-ups to print.')}win.document.write('<!doctype html><title>Print photos</title><style>body{margin:0;text-align:center}img{max-width:100%;max-height:100vh;object-fit:contain}@media print{@page{margin:0}body{margin:0}}</style><img src="'+url+'" onload="setTimeout(()=>window.print(),350)">');win.document.close();return}if(format==='pdf'){(await makePDF(canvas)).save(fileName()+'.pdf')}else{const a=document.createElement('a');a.href=jpeg;a.download=fileName()+'.jpg';a.click()}}catch(e){status(e.message)}}$('download').onclick=()=>exportFile(false);$('print').onclick=()=>exportFile(true);
+function render(){const root=$('shots');root.innerHTML='';if(!photos.length)root.innerHTML='<div class="empty">Your photos will show up here after you take them. ✨</div>';photos.forEach((p,i)=>{const card=document.createElement('div');card.className='shot';const img=document.createElement('img');img.src=p;img.alt='Selfie '+(i+1);const bottom=document.createElement('div');bottom.className='shot-bottom';const label=document.createElement('span');label.textContent='SNAP '+String(i+1).padStart(2,'0');const del=document.createElement('button');del.textContent='Remove ×';del.onclick=()=>{photos.splice(i,1);render()};bottom.append(label,del);card.append(img,bottom);root.append(card)});$('counter').textContent=photos.length+' taken';$('selectedPhoto').innerHTML=photos.map((_,i)=>`<option value="${i}">Photo ${i+1}</option>`).join('');$('download').disabled=$('print').disabled=$('saveDevice').disabled=!photos.length}function updateLayout(){$('singleLabel').style.display=$('layout').value==='single'?'flex':'none'}$('layout').onchange=updateLayout;updateLayout();$('clear').onclick=()=>{autoCancelled=true;photos=[];render()};async function compose(){if(!photos.length)throw Error('Take a photo first.');const layout=$('layout').value;const chosen=layout==='single'?[photos[Number($('selectedPhoto').value)||0]]:layout==='strip'?photos.slice(0,4):photos;const canvas=$('output'),ctx=canvas.getContext('2d');const margin=45,gap=20,w=900,h=675;let cols,rows;if(layout==='strip'){cols=1;rows=4;canvas.width=w+margin*2;canvas.height=rows*h+(rows-1)*gap+margin*2+125}else if(layout==='grid'){cols=2;rows=Math.ceil(chosen.length/2);canvas.width=cols*w+(cols-1)*gap+margin*2;canvas.height=rows*h+(rows-1)*gap+margin*2+90}else{cols=1;rows=1;canvas.width=w+margin*2;canvas.height=h+margin*2+90}ctx.fillStyle='#fffaf4';ctx.fillRect(0,0,canvas.width,canvas.height);for(let i=0;i<chosen.length;i++){const img=new Image();img.src=chosen[i];await img.decode();const x=margin+(i%cols)*(w+gap),y=margin+Math.floor(i/cols)*(h+gap);ctx.drawImage(img,x,y,w,h)}ctx.fillStyle='#493a3b';ctx.textAlign='center';ctx.font='bold 32px sans-serif';ctx.fillText('little moments  ♡',canvas.width/2,canvas.height-35);return canvas}function fileName(){return 'little-moments-'+$('layout').value}async function makePDF(canvas){if(!window.jspdf)throw Error('PDF library did not load. Check your internet connection.');const {jsPDF}=window.jspdf;const orientation=canvas.width>canvas.height?'landscape':'portrait';const pdf=new jsPDF({orientation,unit:'px',format:[canvas.width,canvas.height],hotfixes:['px_scaling']});pdf.addImage(canvas.toDataURL('image/jpeg',.95),'JPEG',0,0,canvas.width,canvas.height);return pdf}function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+async function buildExport() {
+  const canvas = await compose();
+  const format = $('format').value;
+  if (format === 'pdf') {
+    const pdf = await makePDF(canvas);
+    return {blob:pdf.output('blob'),name:fileName()+'.pdf',mime:'application/pdf'};
+  }
+  const blob = await new Promise(resolve => canvas.toBlob(resolve,'image/jpeg',0.95));
+  if (!blob) throw Error('Unable to create JPEG.');
+  return {blob,name:fileName()+'.jpg',mime:'image/jpeg'};
+}
+$('download').onclick = async () => {
+  try {
+    const file = await buildExport();
+    downloadBlob(file.blob,file.name);
+    status('Download started. Check your Downloads folder.');
+  } catch(e) { status('Download failed: '+e.message); }
+};
+$('print').onclick = async () => {
+  if (!photos.length) return;
+  // Open immediately on the tap: mobile browsers block windows opened after awaits.
+  const win = window.open('','_blank');
+  if (!win) { status('Allow pop-ups for this site to print, or use Download.'); return; }
+  win.document.write('<!doctype html><html><head><title>Print photobooth photos</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;text-align:center;background:white}img{display:block;max-width:100%;max-height:100vh;margin:auto}@media print{@page{margin:0}body{margin:0}}</style></head><body><p id="loading">Preparing photo…</p></body></html>');
+  win.document.close();
+  try {
+    const canvas = await compose();
+    const image = win.document.createElement('img');
+    image.alt = 'Your photobooth photos';
+    image.onload = () => {win.document.getElementById('loading')?.remove();win.focus();win.print();};
+    image.src = canvas.toDataURL('image/jpeg',0.95);
+    win.document.body.appendChild(image);
+    status('Print dialog opened. Choose a printer or Save as PDF.');
+  } catch(e) { win.close();status('Print failed: '+e.message); }
+};
 // Mobile Share Sheet: on supported phones users can select Save Image / Save to Files.
 // Otherwise download normally (the browser decides where to store the file).
-$('saveDevice').onclick=async()=>{
-  if(!photos.length)return;
-  try{
-    const canvas=await compose(),format=$('format').value;
-    let blob,name,mime;
-    if(format==='pdf'){
-      const pdf=await makePDF(canvas);
-      blob=pdf.output('blob');name=fileName()+'.pdf';mime='application/pdf';
-    }else{
-      blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.95));
-      if(!blob)throw Error('Could not prepare photo.');
-      name=fileName()+'.jpg';mime='image/jpeg';
+$('saveDevice').onclick = async () => {
+  if (!photos.length) return;
+  try {
+    const {blob,name,mime} = await buildExport();
+    const file = new File([blob],name,{type:mime});
+    if (typeof navigator.share === 'function' &&
+        typeof navigator.canShare === 'function' &&
+        navigator.canShare({files:[file]})) {
+      try {
+        await navigator.share({files:[file],title:'My photobooth photo'});
+        status('Photo shared. To save it, select Save Image or Save to Files in the share menu.');
+        return;
+      } catch(e) {
+        if (e.name === 'AbortError') { status('Save canceled.'); return; }
+        // Some browsers deny a share sheet after asynchronous image composition.
+        console.warn('Native sharing failed, downloading instead:',e);
+      }
     }
-    const file=new File([blob],name,{type:mime});
-    if(navigator.share && navigator.canShare?.({files:[file]})){
-      try{await navigator.share({files:[file]});status('Choose Save Image or Save to Files in the share menu.');return}
-      catch(e){if(e.name==='AbortError')return;console.warn('Sharing unavailable:',e)}
-    }
-    const url=URL.createObjectURL(blob),a=document.createElement('a');
-    a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),60000);
-    status('File prepared. Check your device downloads or browser save menu.');
-  }catch(e){status('Could not save photo: '+e.message)}
+    downloadBlob(blob,name);
+    status('Saved to your browser downloads. On iPhone, open Downloads and choose Save Image.');
+  } catch(e) { status('Could not save: '+e.message); }
 };render();window.addEventListener('resize',drawLiveFace);
 window.addEventListener('orientationchange',()=>setTimeout(drawLiveFace,300));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)drawLiveFace()});

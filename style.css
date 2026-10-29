@@ -63,3 +63,20 @@
 .export .actions{display:flex;gap:9px;flex-wrap:wrap}
 .export .actions button{min-height:44px}
 @media(max-width:600px){.camera-bottom .shutter-actions{flex:1 1 auto}.camera-bottom .shutter-actions #capture{flex:1 1 auto}.export .actions button{flex:1 1 130px}}
+
+/* The flip icon on the camera is icon-only, with no visible button frame. */
+.camera-bottom button.flip-beside,
+.camera-bottom button.flip-beside:hover,
+.camera-bottom button.flip-beside:active {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 6px;
+  color: #754858;
+  min-width: 36px;
+  width: 36px;
+  height: 42px;
+}
+.camera-bottom button.flip-beside svg {width:24px;height:24px;display:block}
+.camera-bottom button.flip-beside:focus-visible {outline:2px solid #754858;outline-offset:3px;border-radius:6px}

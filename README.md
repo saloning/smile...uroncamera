@@ -29,3 +29,10 @@ Latest updates:
 - A compact flip-camera button sits next to Take photo. Rear camera is not mirrored.
 - Cool color effect is processed directly into captured pixels for mobile JPEG/PDF output.
 - Save to device uses the native mobile share sheet when file sharing is supported, or downloads the selected JPEG/PDF otherwise. On iPhone choose Save Image or Save to Files from the share sheet; browsers cannot silently write into Photos.
+
+Latest update:
+- Flip camera icon next to Take Photo is borderless (still a usable button).
+- Print opens its tab immediately, then renders the image and launches the print dialog.
+- Download and Save to Device are both wired to real JPEG/PDF generation.
+- Save to Device tries the native share sheet and falls back to a file download if unsupported.
+- On iPhone, use Save Image from the share sheet (if offered) or save the downloaded JPEG from Files/Downloads to Photos.
