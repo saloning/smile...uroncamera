@@ -26,3 +26,31 @@
 #photoReview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:7;opacity:0;pointer-events:none;transition:opacity .12s ease;}
 #photoReview.review-visible{opacity:1;}
 @media(prefers-reduced-motion:reduce){#shutterBlink.blink-active{animation:none;opacity:.85}#photoReview{transition:none}}
+
+/* Mobile camera and filter controls */
+.filter-list{display:flex;flex-wrap:wrap;gap:8px}
+.camera-settings{max-width:100%}
+#faceOverlay{z-index:2}
+#countdown{z-index:5}
+#shutterBlink{z-index:6}
+#photoReview{z-index:7}
+@media(max-width:600px){
+ .hero{gap:16px}
+ .camera-frame{width:100%;min-width:0}
+ .screen{height:auto;aspect-ratio:4/3}
+ .controls button{flex:1 1 auto}
+ .filter-choice,.face-choice{min-height:42px}
+ .camera-top,.camera-bottom{letter-spacing:0}
+ .camera-bottom{flex-wrap:wrap}
+ .camera-bottom button{min-height:46px}
+}
+
+/* Safari / iOS: preserve the camera mirroring while applying color effects. */
+.screen video{
+  display:block;
+  -webkit-backface-visibility:hidden;
+  backface-visibility:hidden;
+  will-change:filter;
+}
+/* JS sets front/rear orientation and filter directly on video; no CSS
+   transform override here, so the rear camera is never mirrored. */

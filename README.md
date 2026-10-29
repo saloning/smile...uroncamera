@@ -14,3 +14,13 @@ PDF export uses jsPDF from a CDN, so internet access is required for PDF downloa
 
 
 Face effects: Hearts, Blush, Glasses, Crown, and Sparkles follow the first detected face using MediaPipe Face Mesh. An internet connection is required to load the face-tracking library. Face effects are baked into downloaded photos; no face images are sent to your own server. Tracking is processed in the browser.
+
+Mobile notes:
+- Open the published GitHub Pages HTTPS URL on iPhone Safari or Android Chrome.
+- Tap Enable camera and grant permission. Flip camera switches front/rear cameras.
+- Face filters use MediaPipe Face Mesh from a CDN and need internet access.
+- The face overlay scales with the video preview when the phone rotates or resizes.
+- Face tracking performance varies by phone and browser; older devices may run slowly.
+- Photos are processed locally in the browser; no photos are uploaded by this app.
+
+Color filters: applied to the live video using CSS filters (including -webkit-filter), and to saved JPEGs with pixel processing for iOS canvas compatibility. Front selfie camera preview and photo are mirrored; back camera preview and photo are not mirrored.
