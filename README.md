@@ -36,3 +36,6 @@ Latest update:
 - Download and Save to Device are both wired to real JPEG/PDF generation.
 - Save to Device tries the native share sheet and falls back to a file download if unsupported.
 - On iPhone, use Save Image from the share sheet (if offered) or save the downloaded JPEG from Files/Downloads to Photos.
+
+X-Ray filter: live preview uses CSS invert(1); saved photos invert RGB pixels directly for mobile compatibility.
+Sharing: HTML title, Open Graph title/description and Twitter card metadata use 'smile...ur on camera!'. Some messaging apps cache old link previews; new previews may take time to refresh.

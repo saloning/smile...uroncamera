@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id);let stream=null,facing='user',photos=[];const video=$('video');let currentFilter='normal',busy=false,autoCancelled=false;let faceEffect='none',faceLandmarks=null,faceMesh=null,tracking=false,trackingBusy=false;const overlay=$('faceOverlay');let trackingErrorShown=false;
-const filters={normal:'none',bw:'grayscale(1) contrast(1.1)',vintage:'sepia(.7) saturate(.8) contrast(.95)',warm:'sepia(.25) saturate(1.35) brightness(1.06)',cool:'sepia(.22) saturate(1.35) hue-rotate(170deg) contrast(1.08)'};
+const filters={normal:'none',bw:'grayscale(1) contrast(1.1)',vintage:'sepia(.7) saturate(.8) contrast(.95)',warm:'sepia(.25) saturate(1.35) brightness(1.06)',xray:'invert(1)'};
 function applyColorFilter(){
   const effect=filters[currentFilter]||'none';
   // Apply to the actual video, not the face-overlay canvas.
@@ -73,15 +73,9 @@ function applyPhotoColorFilter(ctx,width,height,kind){
       r=(avg+(r-avg)*1.35)*1.06;
       g=(avg+(g-avg)*1.35)*1.06;
       b=(avg+(b-avg)*1.35)*1.06;
-    }else if(kind==='cool'){
-      // Distinct cool-blue tint applied to pixels, not ctx.filter (unreliable on iOS).
-      const lum=.2126*r+.7152*g+.0722*b;
-      r=(r*.76+lum*.24)*.88-5;
-      g=(g*.82+lum*.18)*1.025+3;
-      b=(b*.78+lum*.22)*1.18+13;
-      r=(r-128)*1.08+128;
-      g=(g-128)*1.08+128;
-      b=(b-128)*1.08+128;
+    }else if(kind==='xray'){
+      // Invert RGB pixels in the captured image, even on iOS Safari.
+      r=255-r;g=255-g;b=255-b;
     }
     d[i]=clamp(r);d[i+1]=clamp(g);d[i+2]=clamp(b);
   }
