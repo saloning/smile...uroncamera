@@ -93,7 +93,49 @@ await wait(160);
 shutter.classList.remove('blink-active');
 $('countdown').textContent='';return true}
 $('capture').onclick=async()=>{if(busy||!stream||!video.videoWidth)return;busy=true;autoCancelled=false;$('capture').disabled=true;const auto=$('autoMode').checked;try{if(auto){status('Auto session running — 4 photos with a 3-second timer.');for(let i=0;i<4;i++){if(autoCancelled||!stream)break;const ok=await snap();if(!ok)break}status(autoCancelled?'Auto session stopped.':'All done! Your four photos are ready.')}else{await snap();status('Photo taken! Strike another pose.')}}finally{busy=false;$('countdown').textContent='';$('capture').disabled=!stream;$('capture').textContent=$('autoMode').checked?'◎ Start auto session':'◎ Take photo'}};
-function render(){const root=$('shots');root.innerHTML='';if(!photos.length)root.innerHTML='<div class="empty">Your photos will show up here after you take them. ✨</div>';photos.forEach((p,i)=>{const card=document.createElement('div');card.className='shot';const img=document.createElement('img');img.src=p;img.alt='Selfie '+(i+1);const bottom=document.createElement('div');bottom.className='shot-bottom';const label=document.createElement('span');label.textContent='SNAP '+String(i+1).padStart(2,'0');const del=document.createElement('button');del.textContent='Remove ×';del.onclick=()=>{photos.splice(i,1);render()};bottom.append(label,del);card.append(img,bottom);root.append(card)});$('counter').textContent=photos.length+' taken';$('selectedPhoto').innerHTML=photos.map((_,i)=>`<option value="${i}">Photo ${i+1}</option>`).join('');$('download').disabled=$('print').disabled=$('saveDevice').disabled=!photos.length}function updateLayout(){$('singleLabel').style.display=$('layout').value==='single'?'flex':'none'}$('layout').onchange=updateLayout;updateLayout();$('clear').onclick=()=>{autoCancelled=true;photos=[];render()};async function compose(){if(!photos.length)throw Error('Take a photo first.');const layout=$('layout').value;const chosen=layout==='single'?[photos[Number($('selectedPhoto').value)||0]]:layout==='strip'?photos.slice(0,4):photos;const canvas=$('output'),ctx=canvas.getContext('2d');const margin=45,gap=20,w=900,h=675;let cols,rows;if(layout==='strip'){cols=1;rows=4;canvas.width=w+margin*2;canvas.height=rows*h+(rows-1)*gap+margin*2+125}else if(layout==='grid'){cols=2;rows=Math.ceil(chosen.length/2);canvas.width=cols*w+(cols-1)*gap+margin*2;canvas.height=rows*h+(rows-1)*gap+margin*2+90}else{cols=1;rows=1;canvas.width=w+margin*2;canvas.height=h+margin*2+90}ctx.fillStyle='#fffaf4';ctx.fillRect(0,0,canvas.width,canvas.height);for(let i=0;i<chosen.length;i++){const img=new Image();img.src=chosen[i];await img.decode();const x=margin+(i%cols)*(w+gap),y=margin+Math.floor(i/cols)*(h+gap);ctx.drawImage(img,x,y,w,h)}ctx.fillStyle='#493a3b';ctx.textAlign='center';ctx.font='bold 32px sans-serif';ctx.fillText('little moments  ♡',canvas.width/2,canvas.height-35);return canvas}function fileName(){return 'little-moments-'+$('layout').value}async function makePDF(canvas){if(!window.jspdf)throw Error('PDF library did not load. Check your internet connection.');const {jsPDF}=window.jspdf;const orientation=canvas.width>canvas.height?'landscape':'portrait';const pdf=new jsPDF({orientation,unit:'px',format:[canvas.width,canvas.height],hotfixes:['px_scaling']});pdf.addImage(canvas.toDataURL('image/jpeg',.95),'JPEG',0,0,canvas.width,canvas.height);return pdf}function downloadBlob(blob, filename) {
+// Decorative borders are rendered directly into the export canvas,
+// so JPEG, PDF, print and Save to device all use the selected frame.
+let selectedFrame='classic';
+const frameNames={classic:'Classic cream',hearts:'Pink hearts',stripes:'Blue stripes',checker:'Pink gingham',lavender:'Lavender stars'};
+document.querySelectorAll('.frame-option').forEach(button=>{
+  button.addEventListener('click',()=>{
+    selectedFrame=button.dataset.frame;
+    document.querySelectorAll('.frame-option').forEach(other=>{
+      const active=other===button;
+      other.classList.toggle('active',active);
+      other.setAttribute('aria-pressed',String(active));
+    });
+    $('frameNote').textContent=frameNames[selectedFrame]+' selected · Your downloads will use this frame.';
+  });
+});
+function paintFrame(ctx,w,h,kind){
+  ctx.save();
+  const fill={classic:'#fffaf4',hearts:'#ed9db8',stripes:'#c6e8f4',checker:'#f8c6d7',lavender:'#dcd1f4'}[kind]||'#fffaf4';
+  ctx.fillStyle=fill;ctx.fillRect(0,0,w,h);
+  if(kind==='hearts'){
+    ctx.fillStyle='#ffffff';
+    ctx.font='46px Georgia, serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    for(let y=27;y<h;y+=106)for(let x=27;x<w;x+=106)ctx.fillText('♡',x+((Math.floor(y/106)%2)*52),y);
+  }else if(kind==='stripes'){
+    ctx.save();ctx.beginPath();ctx.rect(0,0,w,h);ctx.clip();
+    ctx.strokeStyle='#f8ffff';ctx.lineWidth=23;
+    for(let x=-h;x<w+h;x+=58){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+h,h);ctx.stroke();}
+    ctx.restore();
+  }else if(kind==='checker'){
+    ctx.fillStyle='rgba(255,255,255,.52)';
+    const tile=42;
+    for(let y=0;y<h;y+=tile)for(let x=0;x<w;x+=tile)
+      if((Math.floor(x/tile)+Math.floor(y/tile))%2===0)ctx.fillRect(x,y,tile,tile);
+  }else if(kind==='lavender'){
+    ctx.fillStyle='#fffafc';ctx.textAlign='center';ctx.textBaseline='middle';
+    for(let y=32;y<h;y+=115)for(let x=35;x<w;x+=120){
+      ctx.font=((x+y)%2?'34px':'27px')+' Georgia, serif';
+      ctx.fillText((Math.floor(x/120)+Math.floor(y/115))%2?'✧':'✦',x,y);
+    }
+  }
+  ctx.restore();
+}
+function render(){const root=$('shots');root.innerHTML='';if(!photos.length)root.innerHTML='<div class="empty">Your photos will show up here after you take them. ✨</div>';photos.forEach((p,i)=>{const card=document.createElement('div');card.className='shot';const img=document.createElement('img');img.src=p;img.alt='Selfie '+(i+1);const bottom=document.createElement('div');bottom.className='shot-bottom';const label=document.createElement('span');label.textContent='SNAP '+String(i+1).padStart(2,'0');const del=document.createElement('button');del.textContent='Remove ×';del.onclick=()=>{photos.splice(i,1);render()};bottom.append(label,del);card.append(img,bottom);root.append(card)});$('counter').textContent=photos.length+' taken';$('selectedPhoto').innerHTML=photos.map((_,i)=>`<option value="${i}">Photo ${i+1}</option>`).join('');$('download').disabled=$('print').disabled=$('saveDevice').disabled=!photos.length}function updateLayout(){$('singleLabel').style.display=$('layout').value==='single'?'flex':'none'}$('layout').onchange=updateLayout;updateLayout();$('clear').onclick=()=>{autoCancelled=true;photos=[];render()};async function compose(){if(!photos.length)throw Error('Take a photo first.');const layout=$('layout').value;const chosen=layout==='single'?[photos[Number($('selectedPhoto').value)||0]]:layout==='strip'?photos.slice(0,4):photos;const canvas=$('output'),ctx=canvas.getContext('2d');const margin=45,gap=20,w=900,h=675;let cols,rows;if(layout==='strip'){cols=1;rows=4;canvas.width=w+margin*2;canvas.height=rows*h+(rows-1)*gap+margin*2+125}else if(layout==='grid'){cols=2;rows=Math.ceil(chosen.length/2);canvas.width=cols*w+(cols-1)*gap+margin*2;canvas.height=rows*h+(rows-1)*gap+margin*2+90}else{cols=1;rows=1;canvas.width=w+margin*2;canvas.height=h+margin*2+90}paintFrame(ctx,canvas.width,canvas.height,selectedFrame);for(let i=0;i<chosen.length;i++){const img=new Image();img.src=chosen[i];await img.decode();const x=margin+(i%cols)*(w+gap),y=margin+Math.floor(i/cols)*(h+gap);ctx.fillStyle='#ffffff';ctx.fillRect(x-9,y-9,w+18,h+18);ctx.drawImage(img,x,y,w,h)}ctx.fillStyle='#493a3b';ctx.textAlign='center';ctx.font='bold 32px sans-serif';ctx.fillText('smile...ur on camera!  ♡',canvas.width/2,canvas.height-35);return canvas}function fileName(){return 'smile-ur-on-camera-'+selectedFrame+'-'+$('layout').value}async function makePDF(canvas){if(!window.jspdf)throw Error('PDF library did not load. Check your internet connection.');const {jsPDF}=window.jspdf;const orientation=canvas.width>canvas.height?'landscape':'portrait';const pdf=new jsPDF({orientation,unit:'px',format:[canvas.width,canvas.height],hotfixes:['px_scaling']});pdf.addImage(canvas.toDataURL('image/jpeg',.95),'JPEG',0,0,canvas.width,canvas.height);return pdf}function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

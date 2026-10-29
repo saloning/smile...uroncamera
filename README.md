@@ -39,3 +39,7 @@ Latest update:
 
 X-Ray filter: live preview uses CSS invert(1); saved photos invert RGB pixels directly for mobile compatibility.
 Sharing: HTML title, Open Graph title/description and Twitter card metadata use 'smile...ur on camera!'. Some messaging apps cache old link previews; new previews may take time to refresh.
+
+Frames: Under Your snapshots, choose Classic cream, Pink hearts, Blue stripes,
+Pink gingham, or Lavender stars. The selected pattern is drawn behind the
+photo layout in compose(), and appears in JPEG/PDF, print, and Save to device.
